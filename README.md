@@ -10,14 +10,14 @@ This project implements an ELT pipeline:
 - Docker
 - Python 3.8+
 - A Hevo Data account
-- A Snowflake account with a warehouse, database, role, and user provisioned (see `setup/snowflake_setup.sql`)
+- A Snowflake account with a warehouse, database, role, and user provisioned
 
 ## Configuration (IMPORTANT — no credentials are stored in this repo)
-All secrets (Snowflake account, user, password/private key, warehouse, database) are supplied via dbt's `profiles.yml`, which lives **outside this repository** at `~/.dbt/profiles.yml` and is never committed to version control.
+All secrets (Snowflake account, user, password/private key, warehouse, database, schema) are supplied via dbt's `profiles.yml`, which lives **outside this repository** at `~/.dbt/profiles.yml` and is never committed to version control.
 
 Before running this project, create your own `~/.dbt/profiles.yml`:
 
-\`\`\`yaml
+```yaml
 hevo_pipeline:
   target: dev
   outputs:
@@ -32,10 +32,11 @@ hevo_pipeline:
       private_key_path: "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PATH') }}"
       private_key_passphrase: "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PASSPHRASE') }}"
       threads: 4
-\`\`\`
+```
 
-Set the corresponding environment variables before running dbt, e.g.:
-\`\`\`bash
+Set the corresponding environment variables before running dbt:
+
+```bash
 export SNOWFLAKE_ACCOUNT=xxxxx
 export SNOWFLAKE_USER=xxxxx
 export SNOWFLAKE_ROLE=xxxxx
@@ -44,22 +45,23 @@ export SNOWFLAKE_DATABASE=xxxxx
 export SNOWFLAKE_SCHEMA=xxxxx
 export SNOWFLAKE_PRIVATE_KEY_PATH=/path/to/key.p8
 export SNOWFLAKE_PRIVATE_KEY_PASSPHRASE=xxxxx
-export SNOWFLAKE_DATABASE=xxxxx
-export SNOWFLAKE_SCHEMA=xxxxx
-\`\`\`
+```
 
 Similarly, Postgres connection details for Hevo's source are never hardcoded — configure them directly in the Hevo UI, or via environment variables if scripting the container:
-\`\`\`bash
+
+```bash
 export PG_USER=xxxxx
 export PG_PASSWORD=xxxxx
 export PG_DB=xxxxx
-\`\`\`
+```
 
 ## How to run
 
 ### 1. Start Postgres (source)
-\`\`\`bash
+
+```bash
 docker volume create pgdata
+
 docker run -d --name pg-hevo \
   -e POSTGRES_USER=$PG_USER \
   -e POSTGRES_PASSWORD=$PG_PASSWORD \
@@ -67,38 +69,40 @@ docker run -d --name pg-hevo \
   -v pgdata:/var/lib/postgresql/data \
   -p 5432:5432 \
   postgres:16 \
-  -c wal_level=logical
-\`\`\`
+  -c wal_level=logical -c max_replication_slots=5 -c max_wal_senders=5
+```
 
 ### 2. Configure Hevo
+
 Create a Postgres source and Snowflake destination pipeline in the Hevo UI, pointing to the values above.
 
 ### 3. Run dbt
-\`\`\`bash
+
+```bash
 python3 -m venv dbt-env
 source dbt-env/bin/activate
 pip install dbt-snowflake
 cd hevo_pipeline
 dbt debug
 dbt run
-\`\`\`
+```
 
 ### 4. Verify
-\`\`\`sql
+
+```sql
 SELECT * FROM customers LIMIT 10;
-\`\`\`
+```
 
 ## Project structure
-\`\`\`
+
 hevo_pipeline/
 ├── models/
-│   ├── staging/
-│   │   ├── sources.yml
-│   │   ├── stg_customers.sql
-│   │   ├── stg_orders.sql
-│   │   └── stg_payments.sql
-│   └── marts/
-│       └── customers.sql
+│ ├── staging/
+│ │ ├── sources.yml
+│ │ ├── stg_customers.sql
+│ │ ├── stg_orders.sql
+│ │ └── stg_payments.sql
+│ └── marts/
+│ └── customers.sql
 └── dbt_project.yml
-\`\`\`
 
