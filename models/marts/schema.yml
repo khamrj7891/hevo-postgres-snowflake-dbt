@@ -1,0 +1,35 @@
+version: 2
+
+models:
+  - name: customers
+    description: "One row per customer, with order history and lifetime payment value, built from raw_customers, raw_orders, and raw_payments."
+    columns:
+      - name: customer_id
+        description: "Unique identifier for a customer."
+        tests:
+          - unique
+          - not_null
+
+      - name: first_name
+        description: "Customer's first name."
+        tests:
+          - not_null
+
+      - name: last_name
+        description: "Customer's last name."
+        tests:
+          - not_null
+
+      - name: first_order
+        description: "Date of the customer's earliest order. Null if the customer has never placed an order."
+
+      - name: most_recent_order
+        description: "Date of the customer's most recent order. Null if the customer has never placed an order."
+
+      - name: number_of_orders
+        description: "Total count of orders placed by the customer."
+
+      - name: customer_lifetime_value
+        description: "Sum of all payments made by the customer across all their orders. Defaults to 0 if no payments exist."
+        tests:
+          - not_null
